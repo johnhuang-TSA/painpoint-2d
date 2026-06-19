@@ -116,6 +116,9 @@
   #playBtn{margin-top:1.5vh;padding:1.3vh 5vw;font-size:min(2.1vw,2.4vh);letter-spacing:.3em;text-indent:.3em;color:#08101c;cursor:pointer;font-family:inherit;font-weight:700;border:none;border-radius:6px;background:linear-gradient(180deg,#cfe0f5,#9fb8d8);box-shadow:0 0 3vh rgba(140,180,230,.4);}
   #playBtn:hover{filter:brightness(1.08);}
   #start .keys{margin-top:1.6vh;color:#5e7890;font-size:min(1.3vw,1.6vh);letter-spacing:.05em;line-height:1.9;text-align:center;}
+  #start .vrow{margin-top:1.4vh;color:#9fb6d6;font-size:min(1.5vw,1.8vh);display:flex;align-items:center;gap:.6em;}
+  #start .vrow select{background:rgba(20,32,50,.92);border:1px solid rgba(120,160,210,.4);color:#dce6f0;border-radius:5px;padding:.6vh 1vh;font-size:min(1.4vw,1.7vh);font-family:inherit;max-width:46vw;cursor:pointer;}
+  #start .vrow select:hover{border-color:#9fc0e0;}
   #start .keys b{color:#9fc0e0;font-weight:600;}
 </style>
 </head>
@@ -210,6 +213,7 @@
     <div class="meta">約 60 秒 ‧ 建議全螢幕播放 ‧ 含音樂與旁白</div>
     <button id="playBtn">▶ 開始</button>
     <div class="keys"><b>空白鍵</b> 暫停／繼續　　<b>→ / 點擊</b> 下一段　　<b>R</b> 重播　　<b>音樂🔊</b> M　　<b>旁白🗣</b> N</div>
+    <div class="vrow">🗣 旁白聲音：<select id="voiceSel0" title="選擇旁白語音（可先試聽）"></select></div>
   </div>
 </div>
 
@@ -322,7 +326,9 @@ const NARR=[
  '同樣的問題，再問一次。這一次，只要幾秒就有答案。隨問，隨答。'
 ];
 const N={on:true,active:false,voice:null,pending:null,guard:null,cur:null,sup:('speechSynthesis' in window)};
-function buildVoiceSel(){const sel=document.getElementById('voiceSel');if(!sel||!N.list)return;sel.innerHTML='';if(!N.list.length){const o=document.createElement('option');o.textContent='（無中文語音）';sel.appendChild(o);return;}N.list.forEach((v,k)=>{const o=document.createElement('option');o.value=k;let nm=v.name.replace('Microsoft ','').replace(/ ?- ?Chinese.*/i,'').replace(/\(.*?(Taiwan|台灣).*?\)/i,'');o.textContent='🗣 '+nm.slice(0,26)+(/online|natural|neural/i.test(v.name)?' ✨':'');if(v===N.voice)o.selected=true;sel.appendChild(o);});}
+function fillSel(sel){if(!sel||!N.list)return;const cur=N.list.indexOf(N.voice);sel.innerHTML='';if(!N.list.length){const o=document.createElement('option');o.textContent='（無中文語音）';sel.appendChild(o);return;}N.list.forEach((v,k)=>{const o=document.createElement('option');o.value=k;let nm=v.name.replace('Microsoft ','').replace(/ ?- ?Chinese.*/i,'').replace(/\(.*?(Taiwan|台灣).*?\)/i,'');o.textContent='🗣 '+nm.slice(0,26)+(/online|natural|neural/i.test(v.name)?' ✨':'');sel.appendChild(o);});if(cur>=0)sel.selectedIndex=cur;}
+function buildVoiceSel(){fillSel(document.getElementById('voiceSel'));fillSel(document.getElementById('voiceSel0'));}
+function setVoiceIdx(k){if(!N.list||!N.list[k])return;N.voice=N.list[k];const a=document.getElementById('voiceSel'),b=document.getElementById('voiceSel0');if(a)a.selectedIndex=k;if(b)b.selectedIndex=k;speak(sceneAt(t));}
 function pickVoice(){if(!N.sup)return;const vs=speechSynthesis.getVoices().filter(v=>/^zh|zh[-_]/i.test(v.lang));N.list=vs;
   N.voice=vs.find(v=>/TW/i.test(v.lang)&&/online|natural|neural|曉|雲/i.test(v.name))   // 神經語音（最自然）
     ||vs.find(v=>/online|natural|neural/i.test(v.name))
@@ -486,7 +492,7 @@ $('btnReplay2').addEventListener('click',e=>{e.stopPropagation();replay();});
 $('btnSpeed').addEventListener('click',e=>{e.stopPropagation();si=(si+1)%SPEEDS.length;speed=SPEEDS[si];$('btnSpeed').textContent='速度 ×'+speed;});
 $('btnMute2').addEventListener('click',e=>{e.stopPropagation();if(!M.ctx)initAudio();M.muted=!M.muted;duck();$('btnMute2').textContent=M.muted?'🔇 靜音':'🔊 音樂';$('btnMute2').classList.toggle('on',!M.muted);});
 $('btnNarr2').addEventListener('click',e=>{e.stopPropagation();N.on=!N.on;if(!N.on)stopNarr();else if(started)speak(sceneAt(t));$('btnNarr2').textContent=N.on?'🗣 旁白':'🤐 旁白關';$('btnNarr2').classList.toggle('on',N.on);});
-$('voiceSel').addEventListener('change',e=>{e.stopPropagation();N.voice=(N.list&&N.list[+e.target.value])||N.voice;speak(sceneAt(t));}); // 切換語音即試聽
+['voiceSel','voiceSel0'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',e=>{e.stopPropagation();setVoiceIdx(+e.target.value);});}); // 封面與控制列兩個下拉同步、切換即試聽
 
 // 除錯
 window.__seek=x=>{started=true;playing=false;$('start').classList.add('hide');document.body.classList.add('cine');t=clamp(x,0,TOTAL);curScene=-1;const i=sceneAt(t);curScene=i;render();};

@@ -45,7 +45,7 @@
 
   /* 場景3：表格堆疊 */
   #cards{position:absolute;inset:0;perspective:1000px;}
-  .card{position:absolute;left:50%;top:50%;width:min(40vw,52vh);
+  .card{position:absolute;left:50%;top:50%;width:min(33vw,45vh);
     background:rgba(14,24,40,.92);border:1px solid rgba(120,160,210,.4);border-radius:.5vh;
     box-shadow:0 1vh 4vh rgba(0,0,0,.6),0 0 1.5vh rgba(90,140,210,.25);
     will-change:transform,opacity;overflow:hidden;}
@@ -214,11 +214,11 @@ const deptEls=[...document.querySelectorAll('.dept')];
 const arrowEls=[...document.querySelectorAll('.arrow')];
 
 // ---------- 場景3：六張表 + 標籤 ----------
-const CARD_POS=[[-22,-8,-9],[18,-14,8],[-8,12,-5],[26,6,11],[-26,4,4],[6,-2,-3]]; // x%,y%,rot
+const CARD_POS=[[-30,-13,-8],[7,-16,7],[32,-5,11],[-27,11,6],[-1,15,-4],[30,13,-10]]; // 六張，排開讓六張都清楚可數
 function buildCard(){const c=document.createElement('div');c.className='card';const bar=document.createElement('div');bar.className='bar';for(let i=0;i<3;i++){const d=document.createElement('div');d.className='dot';bar.appendChild(d);}c.appendChild(bar);const g=document.createElement('div');g.className='grid';for(let i=0;i<42;i++){const cell=document.createElement('div');cell.className='c';const r=Math.random();if(r<0.22)cell.classList.add('b');else if(r<0.3)cell.classList.add('w');g.appendChild(cell);}c.appendChild(g);return c;}
 const cards=[];CARD_POS.forEach(p=>{const el=buildCard();$('cards').appendChild(el);cards.push({el,x:p[0],y:p[1],rot:p[2]});});
-const LBL=['庫存表','預估表','交期表','採購單','驗收紀錄'];
-const LBL_AT=[0.8,1.7,2.6,3.5,4.4]; // 跟著旁白唸出每個表名的節奏出現
+const LBL=['庫存表','預估表','交期表','採購單','驗收紀錄','在途明細'];
+const LBL_AT=[0.7,1.5,2.3,3.1,3.9,4.7]; // 六張，跟著旁白唸出每個表名的節奏出現
 const lblEls=[];LBL.forEach(txt=>{const d=document.createElement('div');d.className='lbl';d.textContent=txt;$('labels').appendChild(d);lblEls.push(d);});
 
 // ---------- 打字機 ----------
@@ -274,8 +274,8 @@ function musicTick(){if(!M.ctx)return;const c=M.ctx;if(c.state==='suspended'){c.
 // ============================================================
 const NARR=[
  '其實，只是一個很簡單的問題。照理說，幾秒鐘就能回答。',
- '不過要回答它，我得先問問倉管，再請教生管，接著確認採購的進度，最後還要等品管回覆。同一個答案，分散在四個部門手上。',
- '庫存表、預估表、交期表、採購單、驗收紀錄……五六張表攤開來，一張一張慢慢比對，花了大半個下午，還是很難完全兜得起來。',
+ '不過要回答它，我得先問問倉管，再請教生管，接著確認採購進度，最後還要等品管回覆。同一個答案，分散在四位同事手上。',
+ '庫存表、預估表、交期表、採購單、驗收紀錄、在途明細……六張表攤開來，一張一張慢慢比對，花了大半個下午，還是很難完全兜得起來。',
  '天都黑了，忙了一整天。我最放不下的，還是——這個答案，真的算對了嗎？',
  '那如果，有一位真正懂供應鏈的 AI 同事呢？你只要問一句，剩下的就交給它。',
  '同樣的問題，再問一次。這一次，只要幾秒，答案就在眼前。隨時想問，隨時都能得到回應。'

@@ -104,6 +104,8 @@
   #tlCtrl button:hover{border-color:#9fc0e0;color:#fff;}
   #tlCtrl button.on{background:rgba(120,160,210,.18);border-color:#9fc0e0;color:#fff;}
   #tlCtrl .sep{color:#3a4656;}
+  #tlCtrl select{background:rgba(10,16,24,.9);border:1px solid rgba(120,160,210,.3);color:#dce6f0;border-radius:5px;padding:5px 7px;font-size:min(1.2vw,1.55vh);font-family:inherit;max-width:26vw;cursor:pointer;}
+  #tlCtrl select:hover{border-color:#9fc0e0;}
 
   #start{position:absolute;inset:0;z-index:40;background:radial-gradient(ellipse at 50% 42%,#0c1a2c,#04080e 80%);
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2vh;transition:opacity .8s;}
@@ -197,6 +199,7 @@
       <span class="sep">｜</span>
       <button id="btnMute2" class="on">🔊 音樂</button>
       <button id="btnNarr2" class="on">🗣 旁白</button>
+      <select id="voiceSel" title="旁白聲音（可切換不同語音）"></select>
       <button id="btnReplay2">↻ 重播</button>
     </div>
   </div>
@@ -319,7 +322,15 @@ const NARR=[
  '同樣的問題，再問一次。這一次，只要幾秒就有答案。隨問，隨答。'
 ];
 const N={on:true,active:false,voice:null,pending:null,guard:null,cur:null,sup:('speechSynthesis' in window)};
-function pickVoice(){if(!N.sup)return;const vs=speechSynthesis.getVoices();N.voice=vs.find(v=>/zh[-_]TW/i.test(v.lang))||vs.find(v=>/zh[-_]HK/i.test(v.lang))||vs.find(v=>/^zh/i.test(v.lang))||null;}
+function buildVoiceSel(){const sel=document.getElementById('voiceSel');if(!sel||!N.list)return;sel.innerHTML='';if(!N.list.length){const o=document.createElement('option');o.textContent='（無中文語音）';sel.appendChild(o);return;}N.list.forEach((v,k)=>{const o=document.createElement('option');o.value=k;let nm=v.name.replace('Microsoft ','').replace(/ ?- ?Chinese.*/i,'').replace(/\(.*?(Taiwan|台灣).*?\)/i,'');o.textContent='🗣 '+nm.slice(0,26)+(/online|natural|neural/i.test(v.name)?' ✨':'');if(v===N.voice)o.selected=true;sel.appendChild(o);});}
+function pickVoice(){if(!N.sup)return;const vs=speechSynthesis.getVoices().filter(v=>/^zh|zh[-_]/i.test(v.lang));N.list=vs;
+  N.voice=vs.find(v=>/TW/i.test(v.lang)&&/online|natural|neural|曉|雲/i.test(v.name))   // 神經語音（最自然）
+    ||vs.find(v=>/online|natural|neural/i.test(v.name))
+    ||vs.find(v=>/TW/i.test(v.lang)&&/google/i.test(v.name))                              // Google 台灣
+    ||vs.find(v=>/google/i.test(v.name)&&/TW|HK/i.test(v.lang))
+    ||vs.find(v=>/TW/i.test(v.lang)&&!/hanhan/i.test(v.name))                             // 避開最死板的 Hanhan
+    ||vs.find(v=>/TW/i.test(v.lang))||vs.find(v=>/HK/i.test(v.lang))||vs[0]||null;
+  buildVoiceSel();}
 if(N.sup){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 function duck(){if(M.master)M.master.gain.value=M.muted?0:(N.on&&N.active?M.vol*0.45:M.vol);}
 function stopNarr(){if(!N.sup)return;clearTimeout(N.pending);clearTimeout(N.guard);N.cur=null;speechSynthesis.cancel();N.active=false;duck();}
@@ -475,6 +486,7 @@ $('btnReplay2').addEventListener('click',e=>{e.stopPropagation();replay();});
 $('btnSpeed').addEventListener('click',e=>{e.stopPropagation();si=(si+1)%SPEEDS.length;speed=SPEEDS[si];$('btnSpeed').textContent='速度 ×'+speed;});
 $('btnMute2').addEventListener('click',e=>{e.stopPropagation();if(!M.ctx)initAudio();M.muted=!M.muted;duck();$('btnMute2').textContent=M.muted?'🔇 靜音':'🔊 音樂';$('btnMute2').classList.toggle('on',!M.muted);});
 $('btnNarr2').addEventListener('click',e=>{e.stopPropagation();N.on=!N.on;if(!N.on)stopNarr();else if(started)speak(sceneAt(t));$('btnNarr2').textContent=N.on?'🗣 旁白':'🤐 旁白關';$('btnNarr2').classList.toggle('on',N.on);});
+$('voiceSel').addEventListener('change',e=>{e.stopPropagation();N.voice=(N.list&&N.list[+e.target.value])||N.voice;speak(sceneAt(t));}); // 切換語音即試聽
 
 // 除錯
 window.__seek=x=>{started=true;playing=false;$('start').classList.add('hide');document.body.classList.add('cine');t=clamp(x,0,TOTAL);curScene=-1;const i=sceneAt(t);curScene=i;render();};

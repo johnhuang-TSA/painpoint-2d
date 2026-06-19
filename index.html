@@ -191,6 +191,7 @@ const stage=$('stage');
 const DUR=[8,16,16,8,9,3];
 const B=[0];DUR.forEach(d=>B.push(B[B.length-1]+d));
 const TOTAL=B[B.length-1]; // 60
+const FADE=0.45; // 轉場淡出入長度（無重疊）
 let t=0,playing=false,started=false,lastTs=0,VW=9.6;
 
 const clamp=(x,a,b)=>x<a?a:x>b?b:x;
@@ -324,7 +325,11 @@ function onEnter(i){
 // ============================================================
 //  渲染
 // ============================================================
-function sceneOpacity(i){const s=B[i],e=B[i+1],F=1.1,H=0.55;let inn=(i===0)?smooth(t/1.6):smooth((t-(s-H))/F);let out=(i===5)?1:(1-smooth((t-(e-H))/F));return clamp(inn*out,0,1);}
+function sceneOpacity(i){const s=B[i],e=B[i+1];
+  // 無重疊：本場淡入[s,s+FADE]、淡出[e-FADE,e]；下一場 s=e 才開始淡入
+  let inn=(i===0)?smooth(t/1.0):smooth((t-s)/FADE);
+  let out=(i===5)?1:(1-smooth((t-(e-FADE))/FADE));
+  return clamp(inn*out,0,1);}
 function render(){
   const i=sceneAt(t);
   if(i!==curScene){curScene=i;if(started)onEnter(i);} // 未按開始前不觸發音樂/旁白
@@ -340,7 +345,8 @@ function render(){
 
   // 時鐘：場景1=09:14，場景4起跳 21:47（render 直接驅動，seek 也正確）
   $('clock').textContent=(i>=3)?'21:47':'09:14';
-  $('clock').style.opacity=((i===0)?smooth((ls-0.3)/1):(i===3)?smooth(ls/0.4):0).toFixed(3);
+  // 時鐘跟著所屬場景一起淡出，避免轉場時殘留
+  $('clock').style.opacity=(((i===0)?smooth((ls-0.3)/1):(i===3)?smooth(ls/0.4):0)*sceneOpacity(i)).toFixed(3);
 
   // 場景1：打字機問句 + 推近 + 撞擊
   {const p=clamp(ls/8,0,1);const done=typeInto($('q1'),'山苦瓜，下週會不會缺貨？',0.4,9,ls,true);
@@ -402,8 +408,9 @@ function loop(now){
   checkLayout();
   if(started&&playing){
     const ci=sceneAt(t);let nt=t+dt;
-    // 聲畫同步：旁白還沒唸完就在該幕結尾等候，待旁白結束再換場
-    if(N.on&&N.active&&ci<DUR.length-1&&nt>=B[ci+1])nt=Math.min(nt,B[ci+1]-0.01);
+    // 聲畫同步：旁白沒唸完就停在「淡出開始前」（畫面完整、不會停在半黑），待旁白結束再淡出換場
+    const hp=B[ci+1]-FADE-0.05;
+    if(N.on&&N.active&&ci<DUR.length-1&&nt>=hp)nt=Math.min(nt,hp);
     t=nt;if(t>=TOTAL){t=TOTAL;playing=false;}
   }
   if(started){render();musicTick();}

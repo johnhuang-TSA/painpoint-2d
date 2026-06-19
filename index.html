@@ -295,7 +295,7 @@ function onEnter(i){
 function sceneOpacity(i){const s=B[i],e=B[i+1],F=1.1,H=0.55;let inn=(i===0)?smooth(t/1.6):smooth((t-(s-H))/F);let out=(i===5)?1:(1-smooth((t-(e-H))/F));return clamp(inn*out,0,1);}
 function render(){
   const i=sceneAt(t);
-  if(i!==curScene){curScene=i;onEnter(i);}
+  if(i!==curScene){curScene=i;if(started)onEnter(i);} // 未按開始前不觸發音樂/旁白
   for(let k=0;k<6;k++)SCENES[k].style.opacity=sceneOpacity(k).toFixed(3);
   const ls=t-B[i];
 
@@ -325,7 +325,7 @@ function render(){
    const allFlash=smooth((ls-6)/0.6);
    deptEls.forEach((el,k)=>{const bt=ls-seq[k];const op=clamp(bt/0.3,0,1);const s=Math.max(0.01,back(clamp(bt/0.5,0,1)));el.style.opacity=Math.max(op,allFlash*0.6).toFixed(3);el.style.transform='scale('+s+') translateY('+((1-easeOut(clamp(bt/0.5,0,1)))*-2)+'vh)';});
    arrowEls.forEach((el,k)=>{el.style.opacity=smooth((ls-arrAt[k])/0.3).toFixed(3);});
-   $('s2line').style.opacity=smooth((ls-8.5)/1.2).toFixed(3);
+   $('s2line').style.opacity=smooth((ls-1.0)/1.0).toFixed(3);
    cam(1).style.transform='translateX('+(Math.sin(ls*1.2)*1.4*VW*easeOut(clamp(ls/2,0,1)))+'px)'; // 輕微甩動
   }
 
@@ -338,7 +338,7 @@ function render(){
      cd.el.style.transform='translate(-50%,-50%) translate('+sx+'px,'+sy+'px) scale('+sc+') rotate('+cd.rot+'deg)';
    });
    lblEls.forEach((el,k)=>{el.style.opacity=smooth((ls-LBL_AT[k])/0.7).toFixed(3);});
-   $('s3line').style.opacity=smooth((ls-12.5)/1.2).toFixed(3);
+   $('s3line').style.opacity=smooth((ls-1.5)/1.0).toFixed(3);
    // 壓迫推近
    cam(2).style.transform='scale('+(1.0+0.16*easeIO(clamp(ls/14,0,1)))+') translate('+(Math.sin(ls*9)*0.3*VW*smooth((ls-8)/4))+'px,0)';
   }

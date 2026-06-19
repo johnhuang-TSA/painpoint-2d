@@ -59,13 +59,13 @@
   .lbl::before{content:"▸ ";color:#5f86b0;}
   #s3line{bottom:19%;padding:.45em 1.2em;border-radius:1vh;background:radial-gradient(ellipse 70% 150% at 50% 50%,rgba(5,7,13,.92) 0%,rgba(5,7,13,.62) 55%,rgba(5,7,13,0) 100%);}
   /* 場景A：數字打架（資料矛盾） */
-  #sA .conflict{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);display:flex;justify-content:center;align-items:center;gap:min(2.4vw,3.2vh);}
-  .ctab{width:min(17vw,23vh);background:rgba(14,24,40,.94);border:1px solid rgba(120,160,210,.4);border-radius:.6vh;overflow:hidden;box-shadow:0 1vh 3vh rgba(0,0,0,.55);}
-  .ctab .ch{height:min(2.6vw,3vh);display:flex;align-items:center;padding:0 1vh;font-size:min(1.5vw,1.9vh);font-weight:700;letter-spacing:.04em;}
+  #sA .conflict{position:absolute;left:0;right:0;top:42%;transform:translateY(-50%);display:flex;justify-content:center;align-items:center;gap:min(4.5vw,5.5vh);}
+  .ctab{width:min(22vw,30vh);background:rgba(14,24,40,.94);border:1px solid rgba(120,160,210,.4);border-radius:.6vh;overflow:hidden;box-shadow:0 1vh 3vh rgba(0,0,0,.55);}
+  .ctab .ch{height:min(2.6vw,3vh);display:flex;align-items:center;padding:0 1vh;font-size:min(1.7vw,2vh);font-weight:700;letter-spacing:.05em;}
   .ctab.l .ch{background:#26385a;color:#bcd6f0;} .ctab.r .ch{background:#3a2c18;color:#ffce8a;} .ctab.g .ch{background:#1f3a2c;color:#9fe6c0;}
   .ctab .crow{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(120,160,210,.18);padding:1px;}
   .ctab .cc{height:min(2.0vw,2.3vh);background:#0e1828;} .ctab .cc.hot{background:rgba(255,140,90,.55);}
-  .neq{font-size:min(5vw,7vh);font-weight:800;color:#ff8a5c;text-shadow:0 0 2vh rgba(255,120,80,.6);animation:neqp 1.1s ease-in-out infinite;}
+  .neq{font-size:min(6.5vw,8.5vh);font-weight:800;color:#ff8a5c;text-shadow:0 0 2vh rgba(255,120,80,.6);animation:neqp 1.1s ease-in-out infinite;}
   @keyframes neqp{0%,100%{transform:scale(1);opacity:.8;}50%{transform:scale(1.16);opacity:1;}}
   /* 場景B：不只一個品項（規模放大） */
   #bswarm{position:absolute;inset:7% 5% 24% 5%;display:grid;grid-template-columns:repeat(14,1fr);grid-auto-rows:1fr;gap:.55vh;}
@@ -146,11 +146,9 @@
     <div class="conflict">
       <div class="ctab l"><div class="ch">ERP</div><div class="crow"><div class="cc"></div><div class="cc hot"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div></div>
       <div class="neq">≠</div>
-      <div class="ctab r"><div class="ch">Excel</div><div class="crow"><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc hot"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div></div></div>
-      <div class="neq">≠</div>
       <div class="ctab g"><div class="ch">新得利</div><div class="crow"><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc"></div><div class="cc hot"></div><div class="cc"></div><div class="cc"></div></div></div>
     </div>
-    <div class="lower mid" id="sAline">ERP、Excel、新得利，<b style="color:#ff9a6a">三個數</b>。到底，信哪一個？</div>
+    <div class="lower mid" id="sAline">ERP 一個數，新得利另一個數。到底，<b style="color:#ff9a6a">信哪一個</b>？</div>
   </div></div>
 
   <!-- 場景4：深夜 -->
@@ -248,7 +246,7 @@ const arrowEls=[...document.querySelectorAll('.arrow')];
 const CARD_POS=[[-30,-13,-8],[7,-16,7],[32,-5,11],[-27,11,6],[-1,15,-4],[30,13,-10]]; // 六張，排開讓六張都清楚可數
 function buildCard(){const c=document.createElement('div');c.className='card';const bar=document.createElement('div');bar.className='bar';for(let i=0;i<3;i++){const d=document.createElement('div');d.className='dot';bar.appendChild(d);}c.appendChild(bar);const g=document.createElement('div');g.className='grid';for(let i=0;i<42;i++){const cell=document.createElement('div');cell.className='c';const r=Math.random();if(r<0.22)cell.classList.add('b');else if(r<0.3)cell.classList.add('w');g.appendChild(cell);}c.appendChild(g);return c;}
 const cards=[];CARD_POS.forEach(p=>{const el=buildCard();$('cards').appendChild(el);cards.push({el,x:p[0],y:p[1],rot:p[2]});});
-const LBL=['庫存表','預估表','交期表','採購單','驗收紀錄','在途明細'];
+const LBL=['庫存表','預估表','交期表','採購單','驗收紀錄','品檢記錄'];
 const LBL_AT=[0.7,1.5,2.3,3.1,3.9,4.7]; // 六張，跟著旁白唸出每個表名的節奏出現
 const lblEls=[];LBL.forEach(txt=>{const d=document.createElement('div');d.className='lbl';d.textContent=txt;$('labels').appendChild(d);lblEls.push(d);});
 
@@ -313,8 +311,8 @@ function musicTick(){if(!M.ctx)return;const c=M.ctx;if(c.state==='suspended'){c.
 const NARR=[
  '其實，這只是一個很簡單的問題。照理說，幾秒鐘就能回答。',
  '要回答它，我得問倉管、問生管、看採購進度、再等品管回覆。同一個答案，散在四位同事手上。',
- '庫存表、預估表、交期表、採購單、驗收紀錄、在途明細……六張表攤開，一張一張比對，耗掉一整個下午。',
- '更麻煩的是，ERP、Excel、新得利，三邊數字還對不起來。到底該信哪一個？',
+ '庫存表、預估表、交期表、採購單、驗收紀錄、品檢記錄……六張表攤開，一張一張比對，耗掉一整個下午。',
+ '更麻煩的是，ERP 跟 新得利，兩邊數字還對不起來。到底該信哪一個？',
  '天黑了，忙了一整天。我最放不下的還是——這個答案，真的對嗎？',
  '而山苦瓜，只是這週要顧的幾百個品項，其中一個而已。',
  '那如果，有一位真正懂供應鏈的 AI 同事呢？你只要問一句，剩下的都交給它。',

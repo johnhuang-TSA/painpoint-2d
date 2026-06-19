@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>最簡單的問題，最難的答案</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{width:100%;height:100%;overflow:hidden;background:#000;
+    font-family:"PingFang TC","Microsoft JhengHei","Noto Sans TC",system-ui,sans-serif;
+    color:#eaf2f7;-webkit-font-smoothing:antialiased;}
+  #stage{position:fixed;overflow:hidden;background:#05070d;--vw:9.6px;
+    --cold:#9fc4e8;--warm:#ffd49a;--ink:var(--cold);
+    transition:filter 1.4s ease;}
+  /* 冷色基底 + 暖色覆蓋（色溫翻轉） */
+  #coolbg{position:absolute;inset:0;background:radial-gradient(125% 95% at 50% 42%,#13243d 0%,#0c1626 45%,#070d17 78%,#05070d 100%);}
+  #warmbg{position:absolute;inset:0;opacity:0;will-change:opacity;
+    background:radial-gradient(90% 80% at 50% 60%,rgba(255,176,92,.6) 0%,rgba(255,140,70,.26) 38%,rgba(150,80,40,.06) 68%,rgba(0,0,0,0) 82%);}
+  #darkness{position:absolute;inset:0;background:#000;opacity:.1;will-change:opacity;}
+
+  .scene{position:absolute;inset:0;opacity:0;will-change:opacity;}
+  .cam{position:absolute;inset:0;will-change:transform;transform-origin:50% 50%;}
+
+  /* 通用字幕 */
+  .center{position:absolute;left:7%;right:7%;top:50%;transform:translateY(-50%);text-align:center;line-height:1.55;}
+  .lower{position:absolute;left:7%;right:7%;bottom:15%;text-align:center;line-height:1.5;}
+  .big{font-weight:600;letter-spacing:.06em;font-size:min(5.4vw,6vh);text-shadow:0 .12em 1em rgba(0,0,0,.7);}
+  .mid{font-weight:600;letter-spacing:.05em;font-size:min(3.6vw,4.2vh);text-shadow:0 .1em .8em rgba(0,0,0,.75);}
+  .dim{color:#8aa6c4;}
+  .cur{display:inline-block;width:.08em;height:1em;background:var(--ink);margin-left:.06em;vertical-align:-0.12em;animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* 時鐘 */
+  #clock{position:absolute;right:7%;top:12%;font-family:"Consolas","Menlo",monospace;
+    font-size:min(3.2vw,3.6vh);letter-spacing:.1em;color:#6f93b8;opacity:0;will-change:opacity,transform;}
+  #clock.flash{animation:clockflash 1s ease;}
+  @keyframes clockflash{0%{filter:brightness(3);color:#cfe6ff;}100%{filter:brightness(1);}}
+
+  /* 場景2：四部門 */
+  #s2 .flow{position:absolute;left:0;right:0;top:38%;display:flex;justify-content:center;align-items:center;gap:min(2vw,2.4vh);flex-wrap:wrap;}
+  .dept{opacity:0;font-weight:700;font-size:min(3.4vw,4vh);padding:.35em .7em;border-radius:.3em;
+    border:2px solid currentColor;will-change:transform,opacity;}
+  .arrow{opacity:0;font-size:min(2.6vw,3vh);color:#5f7ea0;will-change:opacity;}
+  .d0{color:#5fa8ff;} .d1{color:#5fd98a;} .d2{color:#ffb05c;} .d3{color:#c98aff;}
+
+  /* 場景3：表格堆疊 */
+  #cards{position:absolute;inset:0;perspective:1000px;}
+  .card{position:absolute;left:50%;top:50%;width:min(40vw,52vh);
+    background:rgba(14,24,40,.92);border:1px solid rgba(120,160,210,.4);border-radius:.5vh;
+    box-shadow:0 1vh 4vh rgba(0,0,0,.6),0 0 1.5vh rgba(90,140,210,.25);
+    will-change:transform,opacity;overflow:hidden;}
+  .card .bar{height:min(2.4vw,2.8vh);background:linear-gradient(90deg,#26385a,#18233a);display:flex;align-items:center;gap:.5vh;padding:0 1vh;}
+  .card .dot{width:min(.7vw,.8vh);height:min(.7vw,.8vh);border-radius:50%;background:#3a4f70;}
+  .card .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:rgba(120,160,210,.18);padding:1px;}
+  .card .c{height:min(2vw,2.3vh);background:#0e1828;}
+  .card .c.b{background:rgba(120,160,210,.22);} .card .c.w{background:rgba(210,150,90,.22);}
+  #labels{position:absolute;left:5%;bottom:16%;display:flex;flex-direction:column;gap:1.1vh;}
+  .lbl{opacity:0;font-size:min(2vw,2.3vh);color:#9fc0e0;letter-spacing:.12em;will-change:opacity;}
+  .lbl::before{content:"▸ ";color:#5f86b0;}
+  #s3line{bottom:19%;padding:.45em 1.2em;border-radius:1vh;background:radial-gradient(ellipse 70% 150% at 50% 50%,rgba(5,7,13,.92) 0%,rgba(5,7,13,.62) 55%,rgba(5,7,13,0) 100%);}
+
+  /* 場景5/6 暖字 */
+  .warmtext{color:var(--warm);}
+  #s6 .ans{color:#fff0d8;}
+
+  /* 暈影 / 顆粒 / 黑邊 */
+  #vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 100% at 50% 50%,rgba(0,0,0,0) 50%,rgba(0,0,0,.6) 100%);}
+  #grain{position:absolute;inset:-50%;pointer-events:none;opacity:.05;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+  .bar-cine{position:absolute;left:0;right:0;height:0;background:#000;z-index:20;pointer-events:none;transition:height .25s cubic-bezier(.7,0,.3,1);}
+  #barTop{top:0;} #barBot{bottom:0;}
+  body.cine #barTop,body.cine #barBot{height:12%;}
+
+  #prog{position:absolute;left:12%;right:12%;bottom:5%;height:.32vh;background:rgba(255,255,255,.08);border-radius:2px;z-index:21;opacity:0;transition:opacity .6s;}
+  #prog i{display:block;height:100%;width:0;background:rgba(220,235,250,.55);border-radius:2px;}
+  #endhint{position:absolute;left:0;right:0;bottom:5.4%;text-align:center;z-index:21;font-size:min(1.3vw,1.6vh);color:rgba(255,220,180,.4);letter-spacing:.2em;opacity:0;transition:opacity 1s;}
+
+  #start{position:absolute;inset:0;z-index:40;background:radial-gradient(ellipse at 50% 42%,#0c1a2c,#04080e 80%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2.2vh;transition:opacity .8s;}
+  #start.hide{opacity:0;pointer-events:none;}
+  #start .kick{letter-spacing:.5em;color:#5f86b0;font-size:min(1.5vw,1.8vh);}
+  #start h1{font-size:min(4.4vw,5vh);font-weight:600;letter-spacing:.06em;color:#eaf2f7;}
+  #start .meta{color:#7e98b6;font-size:min(1.6vw,1.9vh);letter-spacing:.06em;}
+  #playBtn{margin-top:1.5vh;padding:1.3vh 5vw;font-size:min(2.1vw,2.4vh);letter-spacing:.3em;text-indent:.3em;color:#08101c;cursor:pointer;font-family:inherit;font-weight:700;border:none;border-radius:6px;background:linear-gradient(180deg,#cfe0f5,#9fb8d8);box-shadow:0 0 3vh rgba(140,180,230,.4);}
+  #playBtn:hover{filter:brightness(1.08);}
+  #start .keys{margin-top:1.6vh;color:#5e7890;font-size:min(1.3vw,1.6vh);letter-spacing:.05em;line-height:1.9;text-align:center;}
+  #start .keys b{color:#9fc0e0;font-weight:600;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="coolbg"></div>
+  <div id="warmbg"></div>
+  <div id="darkness"></div>
+
+  <!-- 場景1 -->
+  <div class="scene" id="s1"><div class="cam" id="cam1">
+    <div class="center"><div class="big" id="q1"></div></div>
+  </div></div>
+
+  <!-- 場景2 -->
+  <div class="scene" id="s2"><div class="cam" id="cam2">
+    <div class="flow" id="flow"></div>
+    <div class="lower mid" id="s2line">一個問題，被切成<b style="color:#ff9a6a">四塊</b>。</div>
+  </div></div>
+
+  <!-- 場景3 -->
+  <div class="scene" id="s3"><div class="cam" id="cam3">
+    <div id="cards"></div>
+    <div id="labels"></div>
+    <div class="lower mid" id="s3line">第六張，<b style="color:#ff9a6a">還沒對完</b>。</div>
+  </div></div>
+
+  <!-- 場景4 -->
+  <div class="scene" id="s4"><div class="cam" id="cam4">
+    <div class="center"><div class="mid dim" style="font-size:min(2.8vw,3.2vh);margin-bottom:1.5vh">忙了一整天。</div>
+      <div class="big">還是不確定——<br>算得<b style="color:#ff8a6a">對不對</b>。<span class="cur"></span></div></div>
+  </div></div>
+
+  <!-- 場景5 -->
+  <div class="scene" id="s5"><div class="cam" id="cam5">
+    <div class="center"><div class="big"><span class="dim">如果……</span><br>
+      有一個<span class="warmtext">「懂供應鏈的 AI 同事」</span>？</div></div>
+  </div></div>
+
+  <!-- 場景6 -->
+  <div class="scene" id="s6"><div class="cam" id="cam6">
+    <div class="center">
+      <div class="mid dim" id="askback" style="margin-bottom:1.8vh"></div>
+      <div class="big ans" id="ans"></div>
+      <div class="big warmtext" id="slogan" style="opacity:0;margin-top:2vh;letter-spacing:.3em">隨問，隨答。</div>
+    </div>
+  </div></div>
+
+  <div id="clock">09:14</div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+  <div class="bar-cine" id="barTop"></div>
+  <div class="bar-cine" id="barBot"></div>
+  <div id="prog"><i id="progi"></i></div>
+  <div id="endhint">— 按 R 重播 —</div>
+
+  <div id="start">
+    <div class="kick">SUPPLY CHAIN ‧ 開場</div>
+    <h1>最簡單的問題，最難的答案</h1>
+    <div class="meta">約 60 秒 ‧ 建議全螢幕播放 ‧ 含音樂與旁白</div>
+    <button id="playBtn">▶ 開始</button>
+    <div class="keys"><b>空白鍵</b> 暫停／繼續　　<b>→ / 點擊</b> 下一段　　<b>R</b> 重播　　<b>音樂🔊</b> M　　<b>旁白🗣</b> N</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function(){
+const $=id=>document.getElementById(id);
+const stage=$('stage');
+
+// ---------- 時間軸（依定版）----------
+const DUR=[8,16,16,8,9,3];
+const B=[0];DUR.forEach(d=>B.push(B[B.length-1]+d));
+const TOTAL=B[B.length-1]; // 60
+let t=0,playing=false,started=false,lastTs=0,VW=9.6;
+
+const clamp=(x,a,b)=>x<a?a:x>b?b:x;
+const smooth=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
+const easeIO=x=>{x=clamp(x,0,1);return x<0.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;};
+const easeOut=x=>{x=clamp(x,0,1);return 1-Math.pow(1-x,3);};
+const back=x=>{x=clamp(x,0,1);const c1=2.2,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2);};
+function pw(times,vals){if(t<=times[0])return vals[0];for(let i=1;i<times.length;i++){if(t<=times[i]){const p=(t-times[i-1])/(times[i]-times[i-1]);return vals[i-1]+(vals[i]-vals[i-1])*smooth(p);}}return vals[vals.length-1];}
+
+// ---------- 版面 ----------
+let _lw=0,_lh=0;
+function layout(){const W=innerWidth,H=innerHeight;if(W<2||H<2)return;let w=W,h=W*9/16;if(h>H){h=H;w=H*16/9;}stage.style.width=w+'px';stage.style.height=h+'px';stage.style.left=(W-w)/2+'px';stage.style.top=(H-h)/2+'px';VW=w/100;stage.style.setProperty('--vw',VW+'px');}
+function checkLayout(){if(innerWidth!==_lw||innerHeight!==_lh){_lw=innerWidth;_lh=innerHeight;layout();}}
+addEventListener('resize',layout);addEventListener('load',layout);
+
+// ---------- 場景2：四部門 ----------
+const DEPTS=['倉管','生管','採購','品管'];
+(function(){const f=$('flow');DEPTS.forEach((d,i)=>{const el=document.createElement('div');el.className='dept d'+i;el.textContent=d;f.appendChild(el);if(i<3){const a=document.createElement('div');a.className='arrow';a.textContent='→';f.appendChild(a);}});})();
+const deptEls=[...document.querySelectorAll('.dept')];
+const arrowEls=[...document.querySelectorAll('.arrow')];
+
+// ---------- 場景3：六張表 + 標籤 ----------
+const CARD_POS=[[-22,-8,-9],[18,-14,8],[-8,12,-5],[26,6,11],[-26,4,4],[6,-2,-3]]; // x%,y%,rot
+function buildCard(){const c=document.createElement('div');c.className='card';const bar=document.createElement('div');bar.className='bar';for(let i=0;i<3;i++){const d=document.createElement('div');d.className='dot';bar.appendChild(d);}c.appendChild(bar);const g=document.createElement('div');g.className='grid';for(let i=0;i<42;i++){const cell=document.createElement('div');cell.className='c';const r=Math.random();if(r<0.22)cell.classList.add('b');else if(r<0.3)cell.classList.add('w');g.appendChild(cell);}c.appendChild(g);return c;}
+const cards=[];CARD_POS.forEach(p=>{const el=buildCard();$('cards').appendChild(el);cards.push({el,x:p[0],y:p[1],rot:p[2]});});
+const LBL=['庫存表','預估表','交期表','採購單','驗收紀錄'];
+const LBL_AT=[2,4.5,7,9.5,12];
+const lblEls=[];LBL.forEach(txt=>{const d=document.createElement('div');d.className='lbl';d.textContent=txt;$('labels').appendChild(d);lblEls.push(d);});
+
+// ---------- 打字機 ----------
+function typeInto(el,text,startLs,cps,ls,showCursor){
+  const n=Math.floor(clamp((ls-startLs)*cps,0,text.length));
+  el.innerHTML=text.slice(0,n).replace(/\n/g,'<br>')+(showCursor&&n<text.length?'<span class="cur"></span>':(showCursor?'<span class="cur"></span>':''));
+  return n>=text.length;
+}
+
+// ============================================================
+//  音樂（Web Audio 合成，依定版音樂弧線）
+// ============================================================
+const M={ctx:null,master:null,muted:false,vol:0.6,noise:null,noiseGain:null,droneGain:null,sched:0,beat:0,buf:null};
+function initAudio(){
+  if(M.ctx)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+  const c=M.ctx=new AC();
+  M.master=c.createGain();M.master.gain.value=M.vol;M.master.connect(c.destination);
+  // 殘響
+  const dly=c.createDelay(1);dly.delayTime.value=0.33;const fb=c.createGain();fb.gain.value=0.3;const wet=c.createGain();wet.gain.value=0.28;
+  M.master.connect(dly);dly.connect(fb);fb.connect(dly);dly.connect(wet);wet.connect(c.destination);
+  // 噪音牆
+  const buf=c.createBuffer(1,c.sampleRate*2,c.sampleRate);const ch=buf.getChannelData(0);for(let i=0;i<ch.length;i++)ch[i]=Math.random()*2-1;M.buf=buf;
+  const ns=c.createBufferSource();ns.buffer=buf;ns.loop=true;const lp=c.createBiquadFilter();lp.type='bandpass';lp.frequency.value=900;lp.Q.value=0.7;
+  M.noiseGain=c.createGain();M.noiseGain.gain.value=0;ns.connect(lp);lp.connect(M.noiseGain);M.noiseGain.connect(M.master);ns.start();
+  // 低頻嗡鳴 drone
+  const o=c.createOscillator();o.type='sine';o.frequency.value=55;const o2=c.createOscillator();o2.type='sine';o2.frequency.value=55.4;
+  M.droneGain=c.createGain();M.droneGain.gain.value=0.05;o.connect(M.droneGain);o2.connect(M.droneGain);M.droneGain.connect(M.master);o.start();o2.start();
+  M.sched=c.currentTime+0.1;
+}
+function thump(t0,vol){const c=M.ctx;const o=c.createOscillator();o.type='sine';o.frequency.setValueAtTime(95,t0);o.frequency.exponentialRampToValueAtTime(38,t0+0.22);const g=c.createGain();g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(0.001,t0+0.36);o.connect(g);g.connect(M.master);o.start(t0);o.stop(t0+0.4);}
+function click(t0,vol){const c=M.ctx;const ns=c.createBufferSource();ns.buffer=M.buf;const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=2600;bp.Q.value=2;const g=c.createGain();g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(0.001,t0+0.05);ns.connect(bp);bp.connect(g);g.connect(M.master);ns.start(t0);ns.stop(t0+0.06);}
+function piano(t0,freq,vol,dur){const c=M.ctx;const g=c.createGain();g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+0.012);g.gain.exponentialRampToValueAtTime(0.001,t0+(dur||2));const o=c.createOscillator();o.type='triangle';o.frequency.value=freq;const o2=c.createOscillator();o2.type='sine';o2.frequency.value=freq*2;const g2=c.createGain();g2.gain.value=0.3;o.connect(g);o2.connect(g2);g2.connect(g);g.connect(M.master);o.start(t0);o2.start(t0);o.stop(t0+(dur||2)+0.1);o2.stop(t0+(dur||2)+0.1);}
+function chordMaj(t0,root,vol){[0,4,7,12].forEach((s,i)=>piano(t0+i*0.05,root*Math.pow(2,s/12),vol*0.6,3.2));}
+function sigh(t0){const c=M.ctx;const ns=c.createBufferSource();ns.buffer=M.buf;const bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.setValueAtTime(700,t0);bp.frequency.linearRampToValueAtTime(300,t0+1.1);bp.Q.value=1.2;const g=c.createGain();g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(0.08,t0+0.3);g.gain.linearRampToValueAtTime(0,t0+1.2);ns.connect(bp);bp.connect(g);g.connect(M.master);ns.start(t0);ns.stop(t0+1.3);}
+// 音樂排程：依場景
+let lastMusScene=-1;
+const A4=440,SCALE=[261.63,293.66,329.63,392.0,440.0];
+function musicScene(i){
+  if(!M.ctx)return;const c=M.ctx,now=c.currentTime;
+  // 噪音牆與 drone 目標
+  const nw=[0,0,0.16,0,0,0][i]; // 場景3 噪音牆
+  M.noiseGain.gain.cancelScheduledValues(now);
+  if(i===2){M.noiseGain.gain.setValueAtTime(M.noiseGain.gain.value,now);M.noiseGain.gain.linearRampToValueAtTime(0.16,now+12);}
+  else if(i===3){M.noiseGain.gain.setValueAtTime(M.noiseGain.gain.value,now);M.noiseGain.gain.linearRampToValueAtTime(0.0,now+0.25);} // 戛然全斷
+  else{M.noiseGain.gain.linearRampToValueAtTime(0,now+0.5);}
+  // drone
+  const dg=[0.05,0.06,0.07,0.045,0.03,0.02][i];M.droneGain.gain.linearRampToValueAtTime(dg,now+1);
+  // 轉折和弦
+  if(i===4){chordMaj(now+0.1,261.63,0.5);}
+  if(i===5){chordMaj(now+0.1,392.0,0.45);}
+  lastMusScene=i;
+}
+function musicTick(){
+  if(!M.ctx)return;const c=M.ctx;if(c.state==='suspended'){c.resume();return;}
+  const i=sceneAt(t),ls=t-B[i];
+  while(M.sched<c.currentTime+0.2){
+    const tt=M.sched;
+    if(i===0){ if(M.beat%8===0)thump(tt,0.5); if(M.beat%16===4)piano(tt,SCALE[2]*2,0.06,2.2); }
+    else if(i===1){ const dens=2+Math.floor(ls/4); if(M.beat%Math.max(2,8-dens)===0)thump(tt,0.42); }
+    else if(i===2){ if(M.beat%2===0)click(tt,0.12+ls*0.01); if(M.beat%6===0)thump(tt,0.3); }
+    else if(i===3){ /* 死寂：偶爾游標滴答 */ if(M.beat%16===0)click(tt,0.05); }
+    else if(i===4){ if(M.beat%8===0){const n=SCALE[(M.beat/8)%SCALE.length|0];piano(tt,n,0.12,2.4);} }
+    else if(i===5){ if(M.beat%8===0)piano(tt,SCALE[2]*2,0.1,2.6); }
+    M.sched+=60/120/2; M.beat++;
+  }
+}
+
+// ============================================================
+//  旁白（Web Speech，單一第一人稱）
+// ============================================================
+const NARR=[
+ '就這麼一句話。三秒鐘，應該就能回答吧？',
+ '可是要回答它，得先問倉管，倉管要我問生管；生管要我看採購；採購要我等品管。一句話，散在四個地方。',
+ '庫存表、預估表、交期表、採購單、驗收紀錄……五六張表貼來貼去，湊了一整個下午，數字永遠對不齊。',
+ '天黑了，忙了一整天。可是我最不安的是——這個答案，到底對不對？沒人敢拍胸脯。',
+ '那如果……有一個懂供應鏈的 AI 同事呢？你只要問它一句，它就接手。',
+ '同樣的問題，再問一次。這次，三秒就有答案。隨問，隨答。'
+];
+const N={on:true,active:false,voice:null,pending:null,guard:null,cur:null,sup:('speechSynthesis' in window)};
+function pickVoice(){if(!N.sup)return;const vs=speechSynthesis.getVoices();N.voice=vs.find(v=>/zh[-_]TW/i.test(v.lang))||vs.find(v=>/zh[-_]HK/i.test(v.lang))||vs.find(v=>/^zh/i.test(v.lang))||null;}
+if(N.sup){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
+function duck(){if(M.master)M.master.gain.value=M.muted?0:(N.on&&N.active?M.vol*0.45:M.vol);}
+function stopNarr(){if(!N.sup)return;clearTimeout(N.pending);clearTimeout(N.guard);N.cur=null;speechSynthesis.cancel();N.active=false;duck();}
+function speak(i){if(!N.sup)return;stopNarr();if(!N.on)return;const txt=NARR[i];if(!txt)return;N.active=true;duck();
+  N.pending=setTimeout(()=>{const u=new SpeechSynthesisUtterance(txt);if(N.voice)u.voice=N.voice;u.lang=N.voice?N.voice.lang:'zh-TW';u.rate=(i<=3?0.97:1.0);u.pitch=1.0;u.volume=1;N.cur=u;u.onend=u.onerror=()=>{if(N.cur===u){N.active=false;duck();}};speechSynthesis.speak(u);},650);
+  N.guard=setTimeout(()=>{N.active=false;duck();},60000);}
+
+// ============================================================
+//  場景切換
+// ============================================================
+function sceneAt(tt){for(let i=0;i<DUR.length;i++){if(tt<B[i+1]-1e-6)return i;}return DUR.length-1;}
+let curScene=-1;
+const SCENES=$$('.scene');function $$(s){return [...document.querySelectorAll(s)];}
+function onEnter(i){
+  // 色溫翻轉：場景5起染暖
+  $('warmbg').style.transition='opacity 1.6s ease';
+  // 時鐘
+  if(i===0){$('clock').textContent='09:14';}
+  if(i===3){$('clock').textContent='21:47';$('clock').classList.remove('flash');void $('clock').offsetWidth;$('clock').classList.add('flash');}
+  // 場景6 打字
+  musicScene(i);speak(i);
+}
+
+// ============================================================
+//  渲染
+// ============================================================
+function sceneOpacity(i){const s=B[i],e=B[i+1],F=1.1,H=0.55;let inn=(i===0)?smooth(t/1.6):smooth((t-(s-H))/F);let out=(i===5)?1:(1-smooth((t-(e-H))/F));return clamp(inn*out,0,1);}
+function render(){
+  const i=sceneAt(t);
+  if(i!==curScene){curScene=i;onEnter(i);}
+  for(let k=0;k<6;k++)SCENES[k].style.opacity=sceneOpacity(k).toFixed(3);
+  const ls=t-B[i];
+
+  // 背景弧線
+  $('darkness').style.opacity=pw([0,8,24,40,48,55,60],[0.10,0.16,0.40,0.62,0.30,0.18,0.16]).toFixed(3);
+  $('warmbg').style.opacity=pw([47,48,55,60],[0,0.05,0.6,0.66]).toFixed(3);
+  $('coolbg').style.opacity=(1-0.6*smooth((t-48)/4)).toFixed(3);
+  // 整體色溫（文字）：48s 後染暖
+  stage.style.setProperty('--ink', t>49? 'var(--warm)':'var(--cold)');
+
+  // 時鐘：場景1=09:14，場景4起跳 21:47（render 直接驅動，seek 也正確）
+  $('clock').textContent=(i>=3)?'21:47':'09:14';
+  $('clock').style.opacity=((i===0)?smooth((ls-0.3)/1):(i===3)?smooth(ls/0.4):0).toFixed(3);
+
+  // 場景1：打字機問句 + 推近 + 撞擊
+  {const p=clamp(ls/8,0,1);const done=typeInto($('q1'),'山苦瓜，下週會不會缺貨？',0.4,9,ls,true);
+   let sc=1.0+0.10*easeIO(clamp((ls-1.6)/6,0,1));
+   // 完成瞬間撞擊微震
+   let shake=0;const dt=ls-(0.4+12/9);if(dt>0&&dt<0.35){shake=(0.35-dt)*VW*1.2;}
+   cam(0).style.transform='scale('+sc+') translate('+(Math.sin(ls*60)*shake)+'px,'+(Math.cos(ls*55)*shake*0.6)+'px)';
+   if(done&&dt>=0&&dt<0.05&&!q1done){q1done=true;if(M.ctx)thump(M.ctx.currentTime,0.7);}
+  }
+
+  // 場景2：四部門依序彈入（皮球感）
+  {const seq=[0.6,1.6,2.6,3.6];const arrAt=[1.1,2.1,3.1];
+   // 一拍同亮（強調被切四塊）在 6s
+   const allFlash=smooth((ls-6)/0.6);
+   deptEls.forEach((el,k)=>{const bt=ls-seq[k];const op=clamp(bt/0.3,0,1);const s=Math.max(0.01,back(clamp(bt/0.5,0,1)));el.style.opacity=Math.max(op,allFlash*0.6).toFixed(3);el.style.transform='scale('+s+') translateY('+((1-easeOut(clamp(bt/0.5,0,1)))*-2)+'vh)';});
+   arrowEls.forEach((el,k)=>{el.style.opacity=smooth((ls-arrAt[k])/0.3).toFixed(3);});
+   $('s2line').style.opacity=smooth((ls-8.5)/1.2).toFixed(3);
+   cam(1).style.transform='translateX('+(Math.sin(ls*1.2)*1.4*VW*easeOut(clamp(ls/2,0,1)))+'px)'; // 輕微甩動
+  }
+
+  // 場景3：六張表朝鏡頭壓上 + 標籤
+  {cards.forEach((cd,k)=>{const ap=k*1.6;const bt=ls-ap;const op=clamp(bt/0.5,0,1);
+     const push=easeOut(clamp(bt/1.2,0,1));
+     const sx=cd.x*VW*(0.4+0.6*push), sy=cd.y*VW*(0.4+0.6*push);
+     const sc=0.7+0.55*push;
+     cd.el.style.opacity=(op*0.96).toFixed(3);
+     cd.el.style.transform='translate(-50%,-50%) translate('+sx+'px,'+sy+'px) scale('+sc+') rotate('+cd.rot+'deg)';
+   });
+   lblEls.forEach((el,k)=>{el.style.opacity=smooth((ls-LBL_AT[k])/0.7).toFixed(3);});
+   $('s3line').style.opacity=smooth((ls-12.5)/1.2).toFixed(3);
+   // 壓迫推近
+   cam(2).style.transform='scale('+(1.0+0.16*easeIO(clamp(ls/14,0,1)))+') translate('+(Math.sin(ls*9)*0.3*VW*smooth((ls-8)/4))+'px,0)';
+  }
+
+  // 場景4：留白、游標、字句
+  {cam(3).style.transform='scale('+(1.0-0.03*easeIO(clamp(ls/8,0,1)))+')';}
+
+  // 場景5：暖光擴散
+  {cam(4).style.transform='scale('+(1.0+0.04*easeIO(clamp(ls/9,0,1)))+')';}
+
+  // 場景6：回答打字 + slogan
+  {const askDone=typeInto($('askback'),'山苦瓜，下週會不會缺貨？',0.0,16,ls,false);
+   const ans=typeInto($('ans'),'「不會。我幫你看過了。」',0.9,11,ls,true);
+   $('slogan').style.opacity=smooth((ls-2.1)/0.8).toFixed(3);
+  }
+
+  // 進度
+  $('progi').style.width=(t/TOTAL*100)+'%';
+  $('prog').style.opacity=(started&&playing&&t<TOTAL)?'1':'0';
+  $('endhint').style.opacity=(started&&t>=TOTAL)?'1':'0';
+}
+let q1done=false;
+function cam(i){return document.getElementById('cam'+(i+1));}
+
+// ---------- 主迴圈 ----------
+function loop(now){
+  if(!lastTs)lastTs=now;let dt=(now-lastTs)/1000;lastTs=now;if(dt>0.1)dt=0.1;
+  checkLayout();
+  if(started&&playing){t+=dt;if(t>=TOTAL){t=TOTAL;playing=false;}}
+  if(started){render();musicTick();}
+  requestAnimationFrame(loop);
+}
+
+// ---------- 控制 ----------
+function begin(){started=true;playing=true;t=0;lastTs=0;curScene=-1;q1done=false;$('start').classList.add('hide');document.body.classList.add('cine');initAudio();try{const el=document.documentElement;if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});}catch(e){}}
+function nextScene(){if(!started)return;for(let i=1;i<B.length;i++){if(B[i]>t+0.05){t=B[i];if(t>=TOTAL){t=TOTAL;playing=false;}return;}}t=TOTAL;playing=false;}
+function replay(){if(!started){begin();return;}t=0;playing=true;lastTs=0;curScene=-1;q1done=false;stopNarr();}
+function toggle(){if(!started||t>=TOTAL)return;playing=!playing;if(!playing)stopNarr();}
+$('playBtn').addEventListener('click',e=>{e.stopPropagation();begin();});
+stage.addEventListener('click',e=>{if(!started)return;if(e.target.id==='playBtn')return;nextScene();});
+addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();started?toggle():begin();}
+  else if(e.code==='ArrowRight'){e.preventDefault();nextScene();}
+  else if(e.key==='r'||e.key==='R'){e.preventDefault();replay();}
+  else if(e.key==='m'||e.key==='M'){if(!M.ctx)initAudio();M.muted=!M.muted;duck();}
+  else if(e.key==='n'||e.key==='N'){N.on=!N.on;if(!N.on)stopNarr();else if(started)speak(sceneAt(t));}
+});
+
+// 除錯
+window.__seek=x=>{started=true;playing=false;$('start').classList.add('hide');document.body.classList.add('cine');t=clamp(x,0,TOTAL);curScene=-1;const i=sceneAt(t);curScene=i;render();};
+window.__t=()=>t;
+
+checkLayout();render();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

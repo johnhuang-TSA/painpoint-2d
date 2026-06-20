@@ -236,7 +236,7 @@
   <div id="start">
     <div class="kick">SUPPLY CHAIN ‧ 開場</div>
     <h1>最簡單的問題，最難的答案</h1>
-    <div class="meta">約 60 秒 ‧ 建議全螢幕播放 ‧ 含音樂與旁白</div>
+    <div class="meta">含旁白約 1～1.5 分鐘 ‧ 關閉旁白約 60 秒 ‧ 建議全螢幕</div>
     <button id="playBtn">▶ 開始</button>
     <div class="keys"><b>空白鍵</b> 暫停／繼續　　<b>→ / 點擊</b> 下一段　　<b>R</b> 重播　　<b>音樂🔊</b> M　　<b>旁白🗣</b> N</div>
     <div class="vrow">🌐 旁白語言：<select id="langSel0" title="旁白語言"></select>　🎵 音樂：<select id="styleSel0" title="音樂風格"></select></div>
@@ -402,7 +402,7 @@ const LANG={
    '同僚がまた質問を投げてくる。彼にとっては軽いひと言——本来なら、数秒で答えられるはず。',
    '問題はサプライチェーンに回ってくる。その答えは、四つのピースを揃えないと出ない。倉庫管理、在庫はあといくつ？生産管理、原料は足りる？購買、次のロットはいつ入る？品質管理、検査報告はいつ出る？私が持っているのは、そのうちのひとつだけ。残りは、同僚に一人ずつ聞いて回る。',
    'もちろん自分で調べてもいい。でも資料をめくるだけでも、在庫表、予測表、納期表、発注書、検収記録、品質検査記録——六枚の表を広げて、一枚ずつ照合して、午後がまるごと消える。',
-   '厄介なのは、ERPと新得利で数字が合わないこと。どちらを信じればいい？',
+   '厄介なのは、ERPと別の在庫システムで数字が合わないこと。どちらを信じればいい？',
    '日が暮れ、丸一日働いた。それでも引っかかるのは——この答え、本当に正しい？',
    'そしてゴーヤは、今週見るべき数百の品目のひとつにすぎない。',
    'もし、サプライチェーンを本当に理解したAIの同僚がいて、こうした質問に即座に答えてくれたら？同僚はひと言聞くだけ、あとは全部任せられる。',
@@ -434,7 +434,7 @@ function pickVoice(){if(!N.sup)return;const all=allVoices();const rx=new RegExp(
   N.voice=pool.find(v=>/online|natural|neural|曉|雲/i.test(v.name))   // 神經語音優先（最自然）
     ||pool.find(v=>/google/i.test(v.name))
     ||pool.find(v=>!/hanhan/i.test(v.name))
-    ||pool[0]||vs[0]||all[0]||null;
+    ||pool[0]||vs[0]||null; // 無對應語言語音時寧可 null（交給引擎依 u.lang 自選），不硬抓任意語言語音
   buildVoiceSel();}
 // 切換旁白語言：旁白文字＋故事字幕＋部門/表名一起換，並重挑該語言的語音
 function applyLang(code){if(!LANG[code])return;lang=code;L=LANG[code];NARR=L.narr;
@@ -457,7 +457,7 @@ function doSpeak(i){const txt=NARR[i];if(!txt)return;
   const parts=[];(txt.match(/[^。．.！!？?]+[。．.！!？?]?/g)||[txt]).forEach(function(seg){seg=seg.trim();if(!seg)return;if(seg.length<=42){parts.push(seg);}else{(seg.match(/[^、，,；;：—]+[、，,；;：—]*/g)||[seg]).forEach(function(s){s=s.trim();if(s)parts.push(s);});}});
   const token={};N.cur=token;let idx=0;
   const next=()=>{if(N.cur!==token)return;clearTimeout(N.guard);if(idx>=parts.length){N.active=false;duck();return;}
-    const u=new SpeechSynthesisUtterance(parts[idx++]);if(N.voice)u.voice=N.voice;u.lang=N.voice?N.voice.lang:L.code;u.rate=(i<=3?0.97:1.0);u.pitch=1.0;u.volume=1;
+    const u=new SpeechSynthesisUtterance(parts[idx++]);if(N.voice)u.voice=N.voice;u.lang=L.code;u.rate=(i<=3?0.97:1.0);u.pitch=1.0;u.volume=1; // u.lang 一律用內容語言
     u.onend=u.onerror=()=>{if(N.cur===token)next();};
     N.guard=setTimeout(()=>{if(N.cur===token){N.active=false;duck();}},14000); // 後備：每句重設，只有單句真的卡住才放行（總長不限）
     try{speechSynthesis.speak(u);}catch(e){next();}};
@@ -512,7 +512,7 @@ function render(){
   // 場景1（index0）：打字機問句 + 推近 + 撞擊
   {const done=typeInto($('q1'),L.q,0.4,9,ls,true);
    let sc=1.0+0.10*easeIO(clamp((ls-1.6)/5,0,1));
-   let shake=0;const dt=ls-(0.4+12/9);if(dt>0&&dt<0.35){shake=(0.35-dt)*VW*1.2;}
+   let shake=0;const dt=ls-(0.4+L.q.length/9);if(dt>0&&dt<0.35){shake=(0.35-dt)*VW*1.2;}
    $('cam1').style.transform='scale('+sc+') translate('+(Math.sin(ls*60)*shake)+'px,'+(Math.cos(ls*55)*shake*0.6)+'px)';
    if(done&&dt>=0&&dt<0.05&&!q1done){q1done=true;if(M.ctx)thump(M.ctx.currentTime,0.7);}
   }
@@ -580,6 +580,7 @@ function loop(now){
     // 聲畫同步：旁白沒唸完就停在「淡出開始前」（畫面完整、不會停在半黑），待旁白結束再淡出換場
     const hp=B[ci+1]-FADE-0.05;
     if(N.on&&N.active&&ci<DUR.length-1&&nt>=hp)nt=Math.min(nt,hp);
+    if(N.on&&N.active&&nt>=TOTAL)nt=Math.min(nt,TOTAL-0.01); // 末幕也等收尾旁白唸完才真正結束
     t=nt;if(t>=TOTAL){t=TOTAL;playing=false;}
   }
   if(started){render();musicTick();}
@@ -587,17 +588,19 @@ function loop(now){
 }
 
 // ---------- 控制 ----------
-function begin(){started=true;playing=true;t=0;lastTs=0;curScene=0;q1done=false;$('start').classList.add('hide');$('bottomUI').classList.add('show');document.body.classList.add('cine');initAudio();unlockAudio();musicScene(0);speakNow(0);try{const el=document.documentElement;if(el.requestFullscreen)el.requestFullscreen().catch(()=>{});}catch(e){}}
+function begin(){started=true;playing=true;t=0;lastTs=0;curScene=0;q1done=false;$('start').classList.add('hide');$('bottomUI').classList.add('show');document.body.classList.add('cine');initAudio();unlockAudio();musicScene(0);speakNow(0);try{const el=document.documentElement;const rf=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;if(rf){const p=rf.call(el);if(p&&p.catch)p.catch(()=>{});}}catch(e){}}
 // 手機（尤其 iOS）需在使用者手勢內解鎖音訊
 function unlockAudio(){try{if(M.ctx&&M.ctx.state==='suspended')M.ctx.resume();}catch(e){}}
 function nextScene(){if(!started)return;for(let i=1;i<B.length;i++){if(B[i]>t+0.05){t=B[i];if(t>=TOTAL){t=TOTAL;playing=false;}return;}}t=TOTAL;playing=false;}
 function replay(){if(!started){begin();return;}t=0;playing=true;lastTs=0;curScene=-1;q1done=false;stopNarr();}
 function toggle(){if(!started)return;if(t>=TOTAL){replay();return;}playing=!playing;
-  if(!playing){try{if(M.ctx)M.ctx.suspend();}catch(e){}try{if(N.sup)speechSynthesis.pause();}catch(e){}}
-  else{try{if(M.ctx)M.ctx.resume();}catch(e){}try{if(N.sup)speechSynthesis.resume();}catch(e){}}}
+  if(!playing){stopNarr();try{if(M.ctx)M.ctx.suspend();}catch(e){}}              // 暫停：停旁白(順帶清計時器)＋停音樂
+  else{try{if(M.ctx)M.ctx.resume();}catch(e){}if(N.on)speak(sceneAt(t));}}        // 續播：音樂回來＋本幕旁白重唸（避開 pause/resume 跨瀏覽器不穩）
 $('playBtn').addEventListener('click',e=>{e.stopPropagation();begin();});
-stage.addEventListener('click',e=>{if(!started)return;if(e.target.id==='playBtn')return;nextScene();});
+stage.addEventListener('click',e=>{if(!started)return;if(e.target.id==='playBtn')return;if(e.target.closest&&e.target.closest('#bottomUI'))return;nextScene();});
+['click','mousedown'].forEach(ev=>$('bottomUI').addEventListener(ev,e=>e.stopPropagation())); // 控制列(含下拉)不冒泡觸發跳段
 addEventListener('keydown',e=>{
+  const tn=e.target&&e.target.tagName;if(tn==='SELECT'||tn==='INPUT'||tn==='TEXTAREA')return; // 焦點在下拉/輸入時不攔鍵
   if(e.code==='Space'){e.preventDefault();started?toggle():begin();}
   else if(e.code==='ArrowRight'){e.preventDefault();nextScene();}
   else if(e.key==='r'||e.key==='R'){e.preventDefault();replay();}
@@ -611,14 +614,16 @@ const tlPhasesEl=$('tlPhases');
 const bp2=$('btnPlay2');
 let speed=1;const SPEEDS=[1,1.5,2,0.5];let si=0;
 PHN.forEach((nm,i)=>{const d=document.createElement('div');d.className='ph';d.innerHTML='<div class="dot"></div><div class="pn">'+(i+1)+'. '+nm+'</div><div class="pb"><i></i></div>';d.addEventListener('click',e=>{e.stopPropagation();jumpTo(i);});tlPhasesEl.appendChild(d);});
-function jumpTo(i){if(!started){begin();}i=clamp(i,0,DUR.length-1);t=B[i];curScene=-1;q1done=(i!==0);playing=true;lastTs=0;stopNarr();render();}
+function jumpTo(i){const wp=started?playing:true;if(!started){begin();}i=clamp(i,0,DUR.length-1);t=B[i];curScene=-1;q1done=(i!==0);playing=wp;lastTs=0;stopNarr();render();} // 保留原本播放/暫停狀態
 $('btnPrev').addEventListener('click',e=>{e.stopPropagation();jumpTo(sceneAt(t)-1);});
 $('btnNext2').addEventListener('click',e=>{e.stopPropagation();jumpTo(sceneAt(t)+1);});
 bp2.addEventListener('click',e=>{e.stopPropagation();started?toggle():begin();});
 $('btnReplay2').addEventListener('click',e=>{e.stopPropagation();replay();});
-$('btnSpeed').addEventListener('click',e=>{e.stopPropagation();si=(si+1)%SPEEDS.length;speed=SPEEDS[si];$('btnSpeed').textContent='速度 ×'+speed;});
+$('btnSpeed').addEventListener('click',e=>{e.stopPropagation();if(N.on)return;si=(si+1)%SPEEDS.length;speed=SPEEDS[si];$('btnSpeed').textContent='速度 ×'+speed;}); // 開旁白時速度鍵停用
+function syncSpeedBtn(){const bs=$('btnSpeed');if(!bs)return;bs.disabled=N.on;bs.style.opacity=N.on?'0.45':'';bs.title=N.on?'關閉旁白後才能調速（避免聲畫脫鉤）':'';if(N.on){si=0;speed=1;bs.textContent='速度 ×1';}}
+syncSpeedBtn();
 $('btnMute2').addEventListener('click',e=>{e.stopPropagation();if(!M.ctx)initAudio();M.muted=!M.muted;duck();$('btnMute2').textContent=M.muted?'🔇 靜音':'🔊 音樂';$('btnMute2').classList.toggle('on',!M.muted);});
-$('btnNarr2').addEventListener('click',e=>{e.stopPropagation();N.on=!N.on;if(!N.on)stopNarr();else if(started)speak(sceneAt(t));$('btnNarr2').textContent=N.on?'🗣 旁白':'🤐 旁白關';$('btnNarr2').classList.toggle('on',N.on);});
+$('btnNarr2').addEventListener('click',e=>{e.stopPropagation();N.on=!N.on;if(!N.on)stopNarr();else if(started)speak(sceneAt(t));$('btnNarr2').textContent=N.on?'🗣 旁白':'🤐 旁白關';$('btnNarr2').classList.toggle('on',N.on);syncSpeedBtn();});
 ['voiceSel','voiceSel0'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',e=>{e.stopPropagation();setVoiceIdx(+e.target.value);});}); // 封面與控制列兩個下拉同步、切換即試聽
 ['langSel','langSel0'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',e=>{e.stopPropagation();applyLang(e.target.value);});}); // 切語言：旁白＋字幕＋部門/表名一起換
 ['styleSel','styleSel0'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('change',e=>{e.stopPropagation();if(!M.ctx)initAudio();applyStyle(e.target.value);});}); // 切音樂風格（封面/播放中皆可）

@@ -452,19 +452,20 @@ buildLangSel();
 function duck(){if(!M.master)return;const tgt=M.muted?0:(N.on&&N.active?M.vol*0.45:M.vol);try{M.master.gain.setTargetAtTime(tgt,M.ctx.currentTime,0.12);}catch(e){M.master.gain.value=tgt;}}
 function stopNarr(){if(!N.sup)return;clearTimeout(N.pending);clearTimeout(N.guard);clearInterval(N.poll);N.cur=null;speechSynthesis.cancel();N.active=false;duck();}
 function doSpeak(i){const txt=NARR[i];if(!txt)return;
-  // 長旁白切成一句一句接力唸：每句短、不被 Chrome ~15s 截斷，句末 onend 穩定觸發
-  const parts=(txt.match(/[^。！？!?]+[。！？!?]?/g)||[txt]).map(s=>s.trim()).filter(Boolean);
+  // 長旁白切成短句接力唸：每句短、不被 Chrome ~15s 截斷，句末 onend 穩定觸發
+  // 先按句末標點切；某段若太長(>42字)，再按頓號/逗號/破折號細切，避免單段過長
+  const parts=[];(txt.match(/[^。．.！!？?]+[。．.！!？?]?/g)||[txt]).forEach(function(seg){seg=seg.trim();if(!seg)return;if(seg.length<=42){parts.push(seg);}else{(seg.match(/[^、，,；;：—]+[、，,；;：—]*/g)||[seg]).forEach(function(s){s=s.trim();if(s)parts.push(s);});}});
   const token={};N.cur=token;let idx=0;
-  const next=()=>{if(N.cur!==token)return;if(idx>=parts.length){N.active=false;duck();return;}
+  const next=()=>{if(N.cur!==token)return;clearTimeout(N.guard);if(idx>=parts.length){N.active=false;duck();return;}
     const u=new SpeechSynthesisUtterance(parts[idx++]);if(N.voice)u.voice=N.voice;u.lang=N.voice?N.voice.lang:L.code;u.rate=(i<=3?0.97:1.0);u.pitch=1.0;u.volume=1;
     u.onend=u.onerror=()=>{if(N.cur===token)next();};
+    N.guard=setTimeout(()=>{if(N.cur===token){N.active=false;duck();}},14000); // 後備：每句重設，只有單句真的卡住才放行（總長不限）
     try{speechSynthesis.speak(u);}catch(e){next();}};
   next();}
 function speak(i){if(!N.sup)return;stopNarr();if(!N.on)return;const txt=NARR[i];if(!txt)return;N.active=true;duck();
-  N.pending=setTimeout(()=>doSpeak(i),450);
-  N.guard=setTimeout(()=>{N.active=false;duck();},22000);}
+  N.pending=setTimeout(()=>doSpeak(i),450);}
 // 在使用者手勢內「立即」唸（解鎖 iOS/手機 TTS）
-function speakNow(i){if(!N.sup||!N.on)return;stopNarr();const txt=NARR[i];if(!txt)return;N.active=true;duck();doSpeak(i);N.guard=setTimeout(()=>{N.active=false;duck();},22000);}
+function speakNow(i){if(!N.sup||!N.on)return;stopNarr();const txt=NARR[i];if(!txt)return;N.active=true;duck();doSpeak(i);}
 
 // ============================================================
 //  場景切換

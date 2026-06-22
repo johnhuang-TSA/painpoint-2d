@@ -456,9 +456,9 @@ function doSpeak(i){const txt=NARR[i];if(!txt)return;
   // 先按句末標點切；某段若太長(>42字)，再按頓號/逗號/破折號細切，避免單段過長
   const parts=[];(txt.match(/[^。．.！!？?]+[。．.！!？?]?/g)||[txt]).forEach(function(seg){seg=seg.trim();if(!seg)return;if(seg.length<=42){parts.push(seg);}else{(seg.match(/[^、，,；;：—]+[、，,；;：—]*/g)||[seg]).forEach(function(s){s=s.trim();if(s)parts.push(s);});}});
   const token={};N.cur=token;let idx=0;
-  const next=()=>{if(N.cur!==token)return;clearTimeout(N.guard);if(idx>=parts.length){N.active=false;duck();return;}
+  const next=()=>{if(N.cur!==token)return;clearTimeout(N.guard);if(idx>=parts.length){if(i===2)lblShown.fill(1);N.active=false;duck();return;} // 場景3旁白唸完：保險補滿（含英文等未被逐詞命中的表）
     const chunk=parts[idx++];let spk=chunk;if(/^zh/i.test(L.code))spk=spk.replace(/AI/g,'A I'); // 中文：逐字母唸 ㄟ-愛＝AI（只動發音、不動畫面文字）
-    if(i===2)for(let k=0;k<LBL.length;k++)if(chunk.indexOf(LBL[k])>=0)lblShown[k]=1; // 場景3：唸到哪張表就點亮左側對應標籤
+    if(i===2)for(let k=0;k<LBL.length;k++){if(chunk.indexOf(LBL[k])>=0||(L.tables[k]&&chunk.toLowerCase().indexOf(L.tables[k].toLowerCase())>=0))lblShown[k]=1;} // 場景3：唸到哪張表就點亮對應標籤（中文常數或當前語言詞，英文大小寫不敏感）
     const u=new SpeechSynthesisUtterance(spk);if(N.voice)u.voice=N.voice;u.lang=L.code;u.rate=(i<=3?0.97:1.0);u.pitch=1.0;u.volume=1; // u.lang 一律用內容語言
     u.onend=u.onerror=()=>{if(N.cur===token)next();};
     N.guard=setTimeout(()=>{if(N.cur===token){N.active=false;duck();}},14000); // 後備：每句重設，只有單句真的卡住才放行（總長不限）
@@ -538,7 +538,7 @@ function render(){
      cd.el.style.transform='translate(-50%,-50%) translate('+sx+'px,'+sy+'px) scale('+sc+') rotate('+cd.rot+'deg)';
    });
    lblEls.forEach((el,k)=>{el.style.opacity=(N.on?lblShown[k]:smooth((ls-LBL_AT[k])/0.7)).toFixed(3);});
-   $('s3line').style.opacity=smooth((ls-5.0)/1.0).toFixed(3);
+   if(N.on){$('s3line').style.transition='opacity .8s ease';$('s3line').style.opacity=lblShown.every(Boolean)?'1':'0';}else{$('s3line').style.transition='none';$('s3line').style.opacity=smooth((ls-5.0)/1.0).toFixed(3);} // 開旁白：六表全唸完字幕才淡入（CSS transition；2D render 無 dt、聲畫等候期 t 凍結也能升起）
    $('cam3').style.transform='scale('+(1.0+0.16*easeIO(clamp(ls/10,0,1)))+') translate('+(Math.sin(ls*9)*0.3*VW*smooth((ls-6)/3))+'px,0)';
   }
 
@@ -637,7 +637,6 @@ $('btnNarr2').addEventListener('click',e=>{e.stopPropagation();N.on=!N.on;if(!N.
 // 除錯
 window.__seek=x=>{started=true;playing=false;$('start').classList.add('hide');document.body.classList.add('cine');t=clamp(x,0,TOTAL);curScene=-1;const i=sceneAt(t);curScene=i;render();};
 window.__t=()=>t;
-
 checkLayout();render();
 requestAnimationFrame(loop);
 })();

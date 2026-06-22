@@ -252,7 +252,7 @@ const $=id=>document.getElementById(id);
 const stage=$('stage');
 
 // ---------- 時間軸（依定版）----------
-const DUR=[7,11,10,7,5,7,9,4]; // 8 幕＝60 秒（含 數字打架、不只一個品項）
+const DUR=[5,11,10,7,5,7,9,4]; // 場景1縮短為5s（旁白變短）；其餘弧線改由 B 自動推導
 const B=[0];DUR.forEach(d=>B.push(B[B.length-1]+d));
 const TOTAL=B[B.length-1]; // 60
 const FADE=0.45; // 轉場淡出入長度（無重疊）
@@ -501,11 +501,11 @@ function render(){
   const ls=t-B[i];
 
   // 背景弧線（對應新 8 幕：邊界 0/7/18/28/35/40/47/56/60）
-  $('darkness').style.opacity=pw([0,7,18,28,35,40,47,56,60],[0.10,0.14,0.34,0.48,0.62,0.5,0.26,0.16,0.16]).toFixed(3);
-  $('warmbg').style.opacity=pw([45,48,52,60],[0,0.15,0.6,0.66]).toFixed(3);
-  $('coolbg').style.opacity=(1-0.6*smooth((t-47)/4)).toFixed(3);
+  $('darkness').style.opacity=pw(B,[0.10,0.14,0.34,0.48,0.62,0.5,0.26,0.16,0.16]).toFixed(3);
+  $('warmbg').style.opacity=pw([B[6]-2,B[6]+1,B[6]+5,TOTAL],[0,0.15,0.6,0.66]).toFixed(3);
+  $('coolbg').style.opacity=(1-0.6*smooth((t-B[6])/4)).toFixed(3);
   // 整體色溫（文字）：一抹希望（47s）後染暖
-  stage.style.setProperty('--ink', t>48? 'var(--warm)':'var(--cold)');
+  stage.style.setProperty('--ink', t>B[6]+1? 'var(--warm)':'var(--cold)');
 
   // 時鐘：場景1=09:14，場景4起跳 21:47（render 直接驅動，seek 也正確）
   $('clock').textContent=(i>=4)?'21:47':'09:14';

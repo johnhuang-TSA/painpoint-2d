@@ -416,14 +416,15 @@ const LANG={
   sB:'これは、今週の<b style="color:#ff9a6a">ひとつの品目</b>にすぎない。',
   s5:'<span class="dim">もし……</span><br><span class="warmtext">「サプライチェーンを理解したAIの同僚」</span>がいたら？'}
 };
-let lang='zh',L=LANG[lang];
+LANG.dori=Object.assign({},LANG.zh,{name:'Dori 真人配音'}); // Dori 真人錄音＝中文內容＋他的聲音，當成一個語言選項（原中文 TTS 仍保留）
+let lang='dori',L=LANG[lang]; // 預設 Dori 真人配音
 let NARR=L.narr;
 const N={on:true,active:false,voice:null,pending:null,guard:null,poll:null,cur:null,curClip:null,sup:('speechSynthesis' in window)};
 // ===== Dori 真人旁白音檔（中文）；非中文或檔案缺失時自動退回 TTS =====
 const VO=[];for(let _i=0;_i<8;_i++){const a=new Audio('audio/s'+(_i+1)+'.mp3');a.preload='auto';VO.push(a);}
 const NARR_ZH=LANG.zh.narr;
 const VO3FRAC=LBL.map(n=>{const idx=NARR_ZH[2].indexOf(n);return idx<0?1:idx/NARR_ZH[2].length;}); // 場景3：六張表名在旁白中的位置→時間比例
-function useVO(i){return N.on&&lang==='zh'&&VO[i]&&!VO[i].error;}
+function useVO(i){return N.on&&lang==='dori'&&VO[i]&&!VO[i].error;}
 function playClip(i){const a=VO[i];if(!a){if(N.sup)doSpeak(i);return;}N.curClip=a;N.active=true;duck();
   try{a.currentTime=0;}catch(e){}
   clearTimeout(N.guard);N.guard=setTimeout(()=>{if(N.curClip===a){N.active=false;duck();}},40000); // 後備：音檔異常卡住時放行
@@ -460,7 +461,7 @@ function applyLang(code){if(!LANG[code])return;lang=code;L=LANG[code];NARR=L.nar
 function buildLangSel(){['langSel','langSel0'].forEach(id=>{const sel=document.getElementById(id);if(!sel)return;sel.innerHTML='';Object.keys(LANG).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent='🌐 '+LANG[k].name;sel.appendChild(o);});sel.value=lang;});}
 if(N.sup){pickVoice();speechSynthesis.onvoiceschanged=pickVoice;}
 buildLangSel();
-function duck(){if(!M.master)return;const tgt=M.muted?0:(N.on&&N.active?M.vol*0.45:M.vol);try{M.master.gain.setTargetAtTime(tgt,M.ctx.currentTime,0.12);}catch(e){M.master.gain.value=tgt;}}
+function duck(){if(!M.master)return;const tgt=M.muted?0:(N.on&&N.active?M.vol*0.22:M.vol);try{M.master.gain.setTargetAtTime(tgt,M.ctx.currentTime,0.12);}catch(e){M.master.gain.value=tgt;}}
 function stopNarr(){clearTimeout(N.pending);clearTimeout(N.guard);clearInterval(N.poll);N.cur=null;
   if(N.curClip){try{N.curClip.pause();N.curClip.onended=N.curClip.onerror=null;}catch(e){}N.curClip=null;}
   if(N.sup)speechSynthesis.cancel();N.active=false;duck();}
@@ -516,7 +517,7 @@ function render(){
   for(let k=0;k<SCENES.length;k++)SCENES[k].style.opacity=sceneOpacity(k).toFixed(3);
   const ls=t-B[i];
   // 真人旁白模式：依音檔播放進度同步場景3表名（旁白文字字元位置等比例對齊）
-  if(N.on&&lang==='zh'&&i===2&&VO[2]&&!VO[2].paused){const d=VO[2].duration||0,ct=VO[2].currentTime;if(d)for(let k=0;k<LBL.length;k++)if(ct>=VO3FRAC[k]*d)lblShown[k]=1;}
+  if(N.on&&lang==='dori'&&i===2&&VO[2]&&!VO[2].paused){const d=VO[2].duration||0,ct=VO[2].currentTime;if(d)for(let k=0;k<LBL.length;k++)if(ct>=VO3FRAC[k]*d)lblShown[k]=1;}
 
   // 背景弧線（對應新 8 幕：邊界 0/7/18/28/35/40/47/56/60）
   $('darkness').style.opacity=pw(B,[0.10,0.14,0.34,0.48,0.62,0.5,0.26,0.16,0.16]).toFixed(3);

@@ -643,7 +643,7 @@ addEventListener('keydown',e=>{
 const PHN=['一句話的問題','被切成四塊','被表淹沒','數字打架','深夜不確定','不只一個品項','一抹希望','隨問隨答'];
 const tlPhasesEl=$('tlPhases');
 const bp2=$('btnPlay2');
-let speed=1;const SPEEDS=[1,1.5,2,0.5];let si=0;
+let speed=1;const SPEEDS=[1,1.25,1.5,2,0.5];let si=0;
 PHN.forEach((nm,i)=>{const d=document.createElement('div');d.className='ph';d.innerHTML='<div class="dot"></div><div class="pn">'+(i+1)+'. '+nm+'</div><div class="pb"><i></i></div>';d.addEventListener('click',e=>{e.stopPropagation();jumpTo(i);});tlPhasesEl.appendChild(d);});
 function jumpTo(i){const wp=started?playing:true;if(!started){begin();}i=clamp(i,0,DUR.length-1);t=B[i];curScene=-1;q1done=(i!==0);playing=wp;lastTs=0;stopNarr();render();} // 保留原本播放/暫停狀態
 $('btnPrev').addEventListener('click',e=>{e.stopPropagation();jumpTo(sceneAt(t)-1);});
